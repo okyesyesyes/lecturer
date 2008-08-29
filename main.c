@@ -194,7 +194,10 @@ repaginate:
         if (speech_on && do_speech) {
             unsigned char* endspeech;
             if (currentpage + 1 < pages) endspeech = page[currentpage+1];
-            else endspeech = text + textlen;
+            else {
+              endspeech = text + textlen;
+              speech_on = 0;
+            }
             char* speech = malloc(endspeech - page[currentpage] + 1);
             memcpy(speech, page[currentpage], endspeech - page[currentpage]);
             speech[endspeech - page[currentpage]] = 0;
