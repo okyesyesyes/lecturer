@@ -1,5 +1,6 @@
 # Super-flaky script using ImageMagick's convert to, well, convert
 # truetype fonts to Lecturer's preferred format.
+# Creates 8859-1 codepoints on an UTF-8 system, for some reason.
 
 import os
 import struct
@@ -41,7 +42,7 @@ for k in [8, 10, 12, 14, 16]:
 
   pos = len(char) * 8 + 4 + 4
 
-  out = open('font'+str(k),'w')
+  out = open('fonts/font'+str(k),'w')
   out.write(struct.pack('<ii', minchar, maxchar))
   for j in char:
     out.write(struct.pack('<HHi', j[0],j[1],pos+j[2]))
