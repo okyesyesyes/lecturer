@@ -17,7 +17,7 @@
 #include <sys/mman.h>
 
 const char* font_names[] = {
-  "font8", "font10", "font12", "font14", "font16"
+  "fonts/font8", "fonts/font10", "fonts/font12", "fonts/font14", "fonts/font16"
 };
 
 FONT fonts[] = {NULL, NULL, NULL, NULL, NULL};

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+cd /mnt/sdcard/reader
+
+export PATH=$PATH:/mnt/sdcard/bin
+export HOME=/mnt/sdcard/
+export LD_LIBRARY_PATH=/mnt/sdcard/LoquendoTTS/bin
+
+./lecturer
