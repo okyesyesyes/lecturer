@@ -59,11 +59,17 @@ int main(int argc, char** argv)
   
   read_conf();
   
+  if (stat(filename, &stbuf) < 0) {
+    free(filename);
+    filename = NULL;
+  }
+  
   if (!filename) filename = file_dialog(TEXT_DIR);
 
 reload:
   if (!filename && !text) exit(0);
   if (filename) {
+    printf("loading file %s\n", filename);
     if (stat(filename, &stbuf) < 0) {
       perror("statting text");
       exit(1);
