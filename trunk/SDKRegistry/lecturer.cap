@@ -1,0 +1,7 @@
+Version|100|
+AppName|lecturer-wrapper|
+AppPath|/mnt/sdcard/lecturer/|
+AppIconFile|terminal.bmp|
+AppMainTitle|Lecturer|
+AppPort|2001|
+COMMAND|CMD|hallo|terminal.bmp|Lecturer|

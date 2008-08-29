@@ -24,6 +24,8 @@
 #include "ui.h"
 #include "speech.h"
 
+#define TEXT_DIR "text"
+
 FONT textfont;
 
 unsigned char* text;
@@ -57,7 +59,7 @@ int main(int argc, char** argv)
   
   read_conf();
   
-  if (!filename) filename = file_dialog(".");
+  if (!filename) filename = file_dialog(TEXT_DIR);
 
 reload:
   if (!filename && !text) exit(0);
@@ -203,7 +205,7 @@ repaginate:
           else if (tsx > UI_RIGHT_AREA && tsy < UI_TOP_AREA) {
             char* oldname = strdup(filename);
             free(filename);
-            filename = file_dialog(".");
+            filename = file_dialog(TEXT_DIR);
             if (filename) {
               munmap(text, textlen);
               text = NULL;

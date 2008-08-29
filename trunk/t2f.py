@@ -9,6 +9,9 @@ import time
 minchar = 32
 maxchar = 256
 
+try: os.mkdir('Lecturer/fonts')
+except: pass
+
 for k in [8, 10, 12, 14, 16]:
   pos = 0
   char = []
@@ -42,7 +45,7 @@ for k in [8, 10, 12, 14, 16]:
 
   pos = len(char) * 8 + 4 + 4
 
-  out = open('fonts/font'+str(k),'w')
+  out = open('Lecturer/fonts/font'+str(k),'w')
   out.write(struct.pack('<ii', minchar, maxchar))
   for j in char:
     out.write(struct.pack('<HHi', j[0],j[1],pos+j[2]))
