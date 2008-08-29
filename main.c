@@ -192,9 +192,12 @@ repaginate:
         //printf("ts x %d y %d pen %d\n",tsx,tsy,tspen);
 
         if (speech_on && do_speech) {
-            char* speech = malloc(page[currentpage+1] - page[currentpage] + 1);
-            memcpy(speech, page[currentpage], page[currentpage+1] - page[currentpage]);
-            speech[page[currentpage+1] - page[currentpage]] = 0;
+            unsigned char* endspeech;
+            if (currentpage + 1 < pages) endspeech = page[currentpage+1];
+            else endspeech = text + textlen;
+            char* speech = malloc(endspeech - page[currentpage] + 1);
+            memcpy(speech, page[currentpage], endspeech - page[currentpage]);
+            speech[endspeech - page[currentpage]] = 0;
             unsigned char* s = (unsigned char*)speech;
             while(*s) {
               if (*s == 0253 || *s == 0273)
