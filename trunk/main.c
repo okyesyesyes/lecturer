@@ -39,6 +39,7 @@ int main(int argc, char** argv)
   int lastspacewidth;
   unsigned char* linepos;
   int currentpage = 0;
+  int currentpermille = -1;
   int tsx, tsy;
   int textlen = 0;
   int pass;
@@ -52,13 +53,14 @@ int main(int argc, char** argv)
   
   screen_init();
   input_init();
-  textfont = get_font(conf.textfont);
   init_ui();
   
   init_speech();
   
   read_conf();
   
+  textfont = get_font(conf.textfont);
+
   if (stat(filename, &stbuf) < 0) {
     free(filename);
     filename = NULL;
@@ -115,6 +117,12 @@ repaginate:
       if (conf.starttextpos && conf.startpage) {
         textpos = conf.starttextpos;
         currentpage = conf.startpage;
+        conf.starttextpos = NULL;
+        conf.startpage = 0;
+      }
+      if (currentpermille != -1) {
+        currentpage = currentpermille * pages / 1000;
+        currentpermille = -1;
       }
     }
     for(;;) {
@@ -201,8 +209,10 @@ repaginate:
         if (r) {
           if (tsx < UI_LEFT_AREA && tsy < UI_TOP_AREA) goto out;
           else if (tsx > UI_CENTER_AREA_LEFT && tsx < UI_CENTER_AREA_RIGHT && tsy < UI_TOP_AREA) {
+            struct conf_s oldconf = conf;
             config_dialog();
-            if(textfont != get_font(conf.textfont)) {
+            if(memcmp(&oldconf, &conf, sizeof(struct conf_s))) {
+              currentpermille = currentpage * 1000 / pages;
               textfont = get_font(conf.textfont);
               printf("repaginating\n");
               goto repaginate;
