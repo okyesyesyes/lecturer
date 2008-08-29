@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cd /mnt/sdcard/reader
+cd /mnt/sdcard/lecturer
 
 export PATH=$PATH:/mnt/sdcard/bin
 export HOME=/mnt/sdcard/

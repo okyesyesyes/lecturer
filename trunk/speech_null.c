@@ -6,6 +6,8 @@
     See the file COPYING.
 */
 
+#include <stdio.h>
+
 int speech_timeout;
 
 void init_speech(void)
@@ -15,12 +17,9 @@ void init_speech(void)
 
 void read_text(char* text)
 {
+  printf("reading: %s\n", text);
 }
 
 void stop_speech(void)
-{
-}
-
-void wait_for_end_of_speech(void)
 {
 }
