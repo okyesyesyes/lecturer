@@ -100,8 +100,3 @@ void stop_speech(void)
 {
   ttsStop(hReader);
 }
-
-void wait_for_end_of_speech(void)
-{
-  ttsWaitForEndOfSpeech(hReader);
-}

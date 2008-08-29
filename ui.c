@@ -76,9 +76,10 @@ click_again:
           goto restart;
         }
         if (!entry->d_type == DT_UNKNOWN) {
-          free(curdir);
+          char* path = malloc(strlen(entries[tsy].d_name) + 1 /* slash */ + strlen(curdir) + 1 /* null byte */);
+          sprintf(path, "%s/%s", curdir, entries[tsy].d_name);
           closedir(d);
-          return strdup(entries[tsy].d_name);
+          return path;
         }
         else goto click_again;
       }
