@@ -28,10 +28,15 @@ void init_ui(void)
   smallfont = get_font(FONT_SMALL);
 }
 
+static int compdirent(const void* one, const void* two)
+{
+  return strcmp(((struct dirent*)one)->d_name, ((struct dirent*)two)->d_name);
+}
+
 char* file_dialog(char* dir)
 {
   char* curdir = strdup(dir);
-  struct dirent entries[screenlines(uifont)];
+  struct dirent entries[screenlines(diafont)];
   struct dirent* de;
 restart:
   de = NULL;
@@ -49,15 +54,17 @@ restart:
     clear_screen();
     draw_button(UI_TOP_RIGHT, "Back");
     memset(entries, 0, sizeof(entries));
-    while (dirp < screenlines(uifont) && (de = readdir(d))) {
-      if (strlen(de->d_name) > 5 && !strcmp(de->d_name + strlen(de->d_name) - 5, ".conf"))
-        continue; /* hide .conf files */
+    while (dirp < screenlines(diafont) && (de = readdir(d))) {
+      if ( (strlen(de->d_name) > 5 && !strcmp(de->d_name + strlen(de->d_name) - 5, ".conf")) || /* hide .conf files */
+           de->d_name[0] == '.' ) /* hide hidden entries */
+        continue;
       entries[dirp] = *de;
       dirp++;
     }
+    qsort((void*)entries, dirp, sizeof(struct dirent), compdirent);
     for (i = 0; i < dirp; i++) {
-      render_string(uifont, x, y, entries[i].d_name);
-      y += fontheight(uifont) + conf.linespacing * fontheight(uifont) / 100;
+      render_string(diafont, x, y, entries[i].d_name);
+      y += fontheight(diafont) + conf.linespacing * fontheight(diafont) / 100;
     }
     if (de) draw_button(UI_BOTTOM_RIGHT, "More");
 click_again:
@@ -68,7 +75,7 @@ click_again:
     if (tsx < UI_RIGHT_AREA || tsy < UI_BOTTOM_AREA) {
       if (tsx > conf.marginx[0] && tsx < screenx - conf.marginx[1] && tsy > conf.marginy[0] && tsy < screeny - conf.marginy[1]) {
         tsy -= conf.marginy[0];
-        tsy /= fontheight(uifont) + conf.linespacing * fontheight(uifont) / 100;
+        tsy /= fontheight(diafont) + conf.linespacing * fontheight(diafont) / 100;
         struct dirent* entry = &entries[tsy];
         if (entry->d_type == DT_DIR) {
           char* newdir = malloc(strlen(curdir) + 1 /* sep */ + strlen(entry->d_name) + 1 /* null */);

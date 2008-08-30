@@ -74,9 +74,11 @@ int TsScreen_waitevent(int timeout) {
   retval = select (FD_SETSIZE, &read_fd_set, NULL, NULL, &tv); 
   if(retval<0) perror("select failed!\n");
   else if(!retval) {
+#if DEBUG
     if(timeout) {
       fprintf(stderr,"++timeout waiting for touchscreen event!\n");
     }
+#endif
     return(0);
   } else {
     if(FD_ISSET(tsfd,&read_fd_set)) {
