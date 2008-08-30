@@ -36,10 +36,10 @@ int main(int argc, char** argv)
   struct stat stbuf;
   unsigned char* textpos;
   unsigned char* lastspace;
-  int lastspacewidth;
+  int lastspacewidth = 0;
   unsigned char* linepos;
   int currentpage = 0;
-  int currentpermille = -1;
+  int currentposrel = -1;
   int tsx, tsy;
   int textlen = 0;
   int pass;
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
   
   init_speech();
   
-  read_conf();
+  read_global_conf();
   
   textfont = get_font(conf.textfont);
 
@@ -72,6 +72,8 @@ reload:
   if (!filename && !text) exit(0);
   if (filename) {
     printf("loading file %s\n", filename);
+    read_file_conf(filename);
+    textfont = get_font(conf.textfont);
     if (stat(filename, &stbuf) < 0) {
       perror("statting text");
       exit(1);
@@ -120,9 +122,10 @@ repaginate:
         conf.starttextpos = NULL;
         conf.startpage = 0;
       }
-      if (currentpermille != -1) {
-        currentpage = currentpermille * pages / 1000;
-        currentpermille = -1;
+      if (currentposrel != -1) {
+        currentpage = currentposrel * pages / 100000;
+        if (currentpage < pages) currentpage++; /* compensate rounding error */
+        currentposrel = -1;
       }
     }
     for(;;) {
@@ -141,14 +144,16 @@ repaginate:
         page = realloc(page, sizeof(unsigned char*) * pages);
         page[pages - 1] = textpos;
       }
-      int extraindent = 0;
+      int extraindent = 0; /* set to conf.paraspacing on paragraph breaks */
       while(fby < screeny - fontheight(textfont) - conf.marginy[1] && textpos < text + textlen) {
-        int linewidth = 0;
-        int nextlinespace = conf.linespacing * fontheight(textfont) / 100;
+        int linewidth = 0;	/* width of text on this line in pixels */
+        int nextlinespace = conf.linespacing * fontheight(textfont) / 100;	/* linespacing in pixels at current font setting */
+        int spacecount = 0;	/* whitespace counter (used for justification) */
         fbx = conf.marginx[0] + extraindent;
-        extraindent = 0;
-        linepos = textpos;
-        lastspace = NULL;
+        extraindent = 0;	/* extra indentation; set to conf.paraindentation on new paragraphs */
+        linepos = textpos;	/* text position on current line */
+        lastspace = NULL;	/* position of the last space character on this line */
+        int dontjustify = 0;	/* set to turn off justification temporarily, e.g. on paragraph breaks */
         while(linewidth < screenx - fbx - conf.marginx[1] && linepos < text + textlen) {
           if (isspace(*linepos)) {
             lastspacewidth = linewidth;
@@ -159,8 +164,11 @@ repaginate:
             lastspace = linepos;
             nextlinespace = conf.paraspacing * fontheight(textfont) / 100;
             extraindent = conf.paraindentation * fontheight(textfont) / 100;
+            dontjustify = 1;
             break;
           }
+          if (*linepos == ' ')
+            spacecount++;
           linewidth += glyphwidth(textfont, *linepos);
           linepos++;
         }
@@ -168,9 +176,25 @@ repaginate:
           lastspace = linepos;
           lastspacewidth = linewidth;
         }
+        int spacewidth = 0;
+        spacecount--; /* The last space before a linebreak is not drawn. */
+        if (spacecount > 0) {
+          spacewidth = (screenx - lastspacewidth - fbx - conf.marginx[1])	/* remaining space on this line in pixels */
+                       + glyphwidth(textfont, ' ') * spacecount;		/* whitespace already accounted for */
+          if (!dontjustify) printf("spacewidth %d num %d\n", spacewidth, spacecount);
+        }
+        else dontjustify = 1;
         //printf("linewidth %d\n",linewidth);
         if (pass == PASS_RENDER) for(linepos = textpos; linepos < lastspace ; linepos++) {
-          fbx += render_char(textfont, fbx, fby, *linepos);
+          if (conf.justify && !dontjustify && *linepos == ' ') {
+            /* doing this division for every space keeps rounding errors from accumulating */
+            int spacesize = spacewidth / spacecount;
+            fbx += spacesize;
+            spacewidth -= spacesize;
+            spacecount--;
+            printf("%d px space remaining for %d spaces\n", spacewidth, spacecount);
+          }
+          else fbx += render_char(textfont, fbx, fby, *linepos);
         }
         fby += fontheight(textfont) + nextlinespace;
         textpos = lastspace;
@@ -218,7 +242,7 @@ repaginate:
             struct conf_s oldconf = conf;
             config_dialog();
             if(memcmp(&oldconf, &conf, sizeof(struct conf_s))) {
-              currentpermille = currentpage * 1000 / pages;
+              currentposrel = currentpage * 100000 / pages;
               textfont = get_font(conf.textfont);
               printf("repaginating\n");
               goto repaginate;
@@ -229,6 +253,7 @@ repaginate:
             free(filename);
             filename = file_dialog(TEXT_DIR);
             if (filename) {
+              write_file_conf(oldname, textpos, currentpage);
               munmap(text, textlen);
               text = NULL;
               if (page) free(page);
@@ -270,7 +295,11 @@ repaginate:
       if (tsx < 40 && tsy < 40) break;
     }
 out:  
-  write_conf(textpos, currentpage);
+  if (filename) {
+    write_file_conf(filename, textpos, currentpage);
+  }
+  write_global_conf();
   if (page) free(page);
+  if (filename) free(filename);
   return 0;
 }
