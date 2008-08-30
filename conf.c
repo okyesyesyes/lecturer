@@ -8,6 +8,7 @@
 
 #include "conf.h"
 #include "font.h"
+#include "screen.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,9 +28,12 @@ struct conf_s conf = {
   .textfont = FONT_12,
   .starttextpos = NULL,
   .startpage = 0,
+  .justify = 1,
 };
 
-void read_conf(void)
+struct conf_s default_conf;
+
+void read_global_conf(void)
 {
   FILE* fp = fopen("conf", "r");
   if (fp) {
@@ -47,15 +51,44 @@ void read_conf(void)
     }
     fclose(fp);
   }
+  default_conf = conf;
 }
 
-void write_conf(unsigned char* textpos, int currentpage)
+void read_file_conf(char* filename)
 {
-  FILE* fp = fopen("conf","w");
+  char* confname = malloc(strlen(filename) + strlen(".conf") + 1);
+  sprintf(confname, "%s.conf", filename);
+  FILE* fp = fopen(confname, "r");
+  if (fp) {
+    if (fread(&conf, 1, sizeof(conf), fp) != sizeof(conf))
+      msg("Error reading config file; continuing with default settings.");
+    fclose(fp);
+  }
+  free(confname);
+}
+
+static void write_conf(FILE* fp, struct conf_s* c, unsigned char* textpos, int currentpage)
+{
   conf.starttextpos = textpos;
   conf.startpage = currentpage;
-  fwrite(&conf, sizeof(conf), 1, fp);
+  fwrite(c, sizeof(struct conf_s), 1, fp);
+}
+
+void write_global_conf(void)
+{
+  FILE* fp = fopen("conf","w");
+  write_conf(fp, &default_conf, NULL, 0);
   fputs(filename, fp);
   fputc('\n', fp);
   fclose(fp);
+}
+
+void write_file_conf(char* filename, unsigned char* textpos, int currentpage)
+{
+  char* confname = malloc(strlen(filename) + strlen(".conf") + 1);
+  sprintf(confname, "%s.conf", filename);
+  FILE* fp = fopen(confname, "w");
+  write_conf(fp, &conf, textpos, currentpage);
+  fclose(fp);
+  free(confname);
 }

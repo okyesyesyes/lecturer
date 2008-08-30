@@ -50,6 +50,8 @@ restart:
     draw_button(UI_TOP_RIGHT, "Back");
     memset(entries, 0, sizeof(entries));
     while (dirp < screenlines(uifont) && (de = readdir(d))) {
+      if (strlen(de->d_name) > 5 && !strcmp(de->d_name + strlen(de->d_name) - 5, ".conf"))
+        continue; /* hide .conf files */
       entries[dirp] = *de;
       dirp++;
     }
@@ -79,6 +81,7 @@ click_again:
           char* path = malloc(strlen(entries[tsy].d_name) + 1 /* slash */ + strlen(curdir) + 1 /* null byte */);
           sprintf(path, "%s/%s", curdir, entries[tsy].d_name);
           closedir(d);
+          free(curdir);
           return path;
         }
         else goto click_again;
@@ -258,17 +261,23 @@ void config_dialog(void)
     draw_checkbox(LEFT, OPTIONS, conf.progressbar);
     render_string(uifont, LEFT + CHECKBOX_SIZE + 10, OPTIONS, "Progress bar");
     
-    draw_checkbox(MARGINS_2, OPTIONS, conf.pagenumber);
-    render_string(uifont, MARGINS_2 + CHECKBOX_SIZE + 10, OPTIONS, "Page numbering");
+    draw_checkbox(CENTER, OPTIONS, conf.pagenumber);
+    render_string(uifont, CENTER + CHECKBOX_SIZE + 10, OPTIONS, "Page numbering");
+    
+    draw_checkbox(RIGHT, OPTIONS, conf.justify);
+    render_string(uifont, RIGHT + CHECKBOX_SIZE + 10, OPTIONS, "Justification");
     
     draw_button(UI_TOP_RIGHT, "Back");
+    draw_button(UI_TOP_LEFT, "Save as default");
+    draw_button(UI_BOTTOM_LEFT, "Reset");
 
     box(conf.marginx[0], conf.marginy[0], screenx - conf.marginx[0] - conf.marginx[1], screeny - conf.marginy[0] - conf.marginy[1]);
     while (!get_click(&x, &y, NULL)) {}
     if (y > OPTIONS && y < OPTIONS + CHECKBOX_SIZE) {
       /* options */
       if (x > LEFT && x < LEFT+CHECKBOX_SIZE) conf.progressbar = -(conf.progressbar - 1);
-      else if (x > MARGINS_2 && x < MARGINS_2 + CHECKBOX_SIZE) conf.pagenumber = -(conf.pagenumber - 1);
+      else if (x > CENTER && x < CENTER + CHECKBOX_SIZE) conf.pagenumber = -(conf.pagenumber - 1);
+      else if (x > RIGHT && x < RIGHT + CHECKBOX_SIZE) conf.justify = -(conf.justify - 1);
     }
     else if (y > MARGINS_BTN && y < MARGINS_BTN + BOX_SIZE) {
       /* left/right margin */
@@ -322,6 +331,14 @@ void config_dialog(void)
     else if (y < UI_TOP_AREA && x > UI_RIGHT_AREA) {
       /* back */
       break;
+    }
+    else if (y < UI_TOP_AREA && x < UI_LEFT_AREA) {
+      default_conf = conf;
+      write_global_conf();
+      msg("Saved.");
+    }
+    else if (y > UI_BOTTOM_AREA && x < UI_LEFT_AREA) {
+      conf = default_conf;
     }
   }
 }
