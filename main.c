@@ -55,10 +55,9 @@ int main(int argc, char** argv)
   input_init();
   init_ui();
   
-  init_speech();
-  
   read_global_conf();
   
+
   textfont = get_font(conf.textfont);
 
   if (stat(filename, &stbuf) < 0) {
@@ -91,6 +90,9 @@ reload:
       exit(1);
     }
   }
+
+  init_speech();
+
   textpos = text;
   int fbx = 0;
   int fby = 0;
@@ -111,9 +113,7 @@ repaginate:
     currentpage = 0;
     textpos = text;
     if (pass == PASS_PAGINATE) {
-      char msg[] = "Paginating file...";
-      clear_screen();
-      render_string(textfont, screenx / 2 - stringwidth(textfont, msg) / 2, screeny / 2, msg);
+      splash_msg("Paginating file...");
     }
     if (pass == PASS_RENDER) {
       if (conf.starttextpos && conf.startpage) {
@@ -239,9 +239,9 @@ repaginate:
         if (r) {
           if (tsx < UI_LEFT_AREA && tsy < UI_TOP_AREA) goto out;
           else if (tsx > UI_CENTER_AREA_LEFT && tsx < UI_CENTER_AREA_RIGHT && tsy < UI_TOP_AREA) {
-            struct conf_s oldconf = conf;
-            config_dialog();
-            if(memcmp(&oldconf, &conf, sizeof(struct conf_s))) {
+            int redo = config_dialog();
+            if (redo & REDO_SPEECHINIT) init_speech();
+            if (redo & REDO_PAGINATION) {
               currentposrel = currentpage * 100000 / pages;
               textfont = get_font(conf.textfont);
               printf("repaginating\n");

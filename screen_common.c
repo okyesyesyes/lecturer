@@ -21,11 +21,3 @@ int screenlines(FONT font)
 {
   return (screeny - conf.marginy[0] - conf.marginy[1]) / (fontheight(font) + conf.linespacing * fontheight(font) / 100);
 }
-
-void msg(char* text)
-{
-  int x, y;
-  clear_screen();
-  render_string(get_font(FONT_12), 0, 0, text);
-  while (!get_click(&x, &y, NULL)) {}
-}
