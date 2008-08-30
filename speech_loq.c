@@ -17,19 +17,31 @@ typedef int ttsResultType;
 #define ttsFALSE 0
 #define ttsTRUE 1
 
-#define tts_LINEAR 0
-#define tts_MONO 0
-
-ttsResultType ttsNewSession(ttsHandleType*, char*);
+ttsResultType ttsNewSession(ttsHandleType* session, char* session_file);
 char* ttsGetErrorMessage(ttsResultType);
-void ttsDeleteSession(ttsHandleType);
-ttsResultType ttsNewReader(ttsHandleType*, ttsHandleType);
-ttsResultType ttsLoadPersona(ttsHandleType, char*, void*, void*);
-ttsResultType ttsSetAudio(ttsHandleType, char*, char*, int, int, int, int);
-ttsResultType ttsRead(ttsHandleType, char*, int, int, void*);
-ttsResultType ttsWaitForEndOfSpeech(ttsHandleType);
-ttsResultType ttsStop(ttsHandleType);
-ttsResultType ttsSetCallback(ttsHandleType, void* callback, void* user, int type);
+void ttsDeleteSession(ttsHandleType); /* no idea what kind of handle this takes; we always use it with
+                                         NULL, which seems to destroy everything */
+ttsResultType ttsNewReader(ttsHandleType* reader, ttsHandleType session);
+ttsResultType ttsLoadPersona(ttsHandleType reader, char* voice_name, void*, void*); /* last two params unknown; we use NULL */
+ttsResultType ttsSetAudio(ttsHandleType reader, char* module_name,
+                          char* output_file, /* a file name or a device; LTTS7AudioBoard on the Go 730 seems to ignore this */
+                          int sample_rate,
+                          int sample_type,   /* text2audio.c uses tts_LINEAR; no idea what that defines to; we use 0 (which works) */
+                          int channels,	     /* text2audio.c uses tts_MONO; we use 1 */
+                          int);		     /* unknown; we use 0 */
+ttsResultType ttsRead(ttsHandleType reader,
+                      char* text_or_file,    /* either the text to read or the name of a file with the text to read */
+                      int noblock,	     /* if set to ttsFALSE, ttsRead() blocks until it has finished talking; otherwise, it returns immediately */
+                      int read_from_file,    /* if set to ttsTRUE, text_or_file is treated as a file name, otherwise as the text to read */
+                      void*);		     /* unknown, but most probably a pointer (text2audio.c uses NULL) */
+ttsResultType ttsWaitForEndOfSpeech(ttsHandleType);	/* pure guesswork */
+ttsResultType ttsStop(ttsHandleType reader); /* stops talking immediately */
+ttsResultType ttsSetCallback(ttsHandleType reader,
+                             void* callback,		/* function called when certain events occur */
+                             void* user,		/* user pointer passed to the callback (don't remember how, though) */
+                             int type);			/* type of event; only 0 seems to yield a result; there is one other
+                                                           legal type (don't remember which) that never calls, and two
+                                                           that yield an error saying that they are only implemented under Windows */
 
 ttsHandleType hSession = NULL;
 ttsHandleType hReader = NULL;
@@ -39,6 +51,13 @@ int speech_timeout;
 static int callback(int eins, int zwei, int drei, int vier, int fuenf)
 {
   if (zwei == 1) {
+    /* This event occurs at some point near the end of speech. It is usually
+       a few words early. One possible explanation is that the audio backend
+       module reports completion once it has sent the audio data to the
+       master control program via IPC, but that does not necessarily mean
+       that the same program has already output them. Not sure, though.
+       In any case, no other event is triggered at the end, so this is the
+       best we can get. */
     ttsWaitForEndOfSpeech(hReader);
     speech_timeout = 1;
   }
