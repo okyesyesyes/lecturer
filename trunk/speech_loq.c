@@ -7,8 +7,14 @@
 */
 
 #include "screen.h"
+#include "conf.h"
+#include "speech.h"
+#include "ui.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
+#include <string.h>
 
 /* These constants and prototypes are guesswork and may be wrong. */
 typedef void* ttsHandleType;
@@ -45,6 +51,7 @@ ttsResultType ttsSetCallback(ttsHandleType reader,
 
 ttsHandleType hSession = NULL;
 ttsHandleType hReader = NULL;
+int current_lang = -1;
 
 int speech_timeout;
 
@@ -72,34 +79,44 @@ static void cleanup(void)
 void init_speech(void)
 {
   int r;
+  if (hSession && current_lang == conf.speech_lang)
+    return;
+  splash_msg("Initializing TTS...");
   speech_timeout = 0;
+  if (hSession) {
+    cleanup();
+    hSession = hReader = NULL;
+  }
   r = ttsNewSession(&hSession, "/mnt/sdcard/LoquendoTTS/default7.session");
   if (r != ttsOK) {
-    msg(ttsGetErrorMessage(r));
+    modal_msg(ttsGetErrorMessage(r));
     ttsDeleteSession(NULL);
     return;
   }
   r = ttsNewReader(&hReader, hSession);
   if (r != ttsOK) {
-    msg(ttsGetErrorMessage(r));
+    modal_msg(ttsGetErrorMessage(r));
     ttsDeleteSession(NULL);
     return;
   }
-  r = ttsLoadPersona(hReader, "Katrin", NULL, NULL);
+  get_languages(); /* corrects conf.speech_lang if necessary */
+  printf("loading voice %s\n", get_languages()[conf.speech_lang]);
+  r = ttsLoadPersona(hReader, get_languages()[conf.speech_lang], NULL, NULL);
   if (r != ttsOK) {
-    msg(ttsGetErrorMessage(r));
+    modal_msg(ttsGetErrorMessage(r));
     ttsDeleteSession(NULL);
     return;
   }
+  current_lang = conf.speech_lang;
   r = ttsSetAudio(hReader, "LTTS7AudioBoard", "bla", 16000, 0, 1, 0);
   if (r != ttsOK) {
-    msg(ttsGetErrorMessage(r));
+    modal_msg(ttsGetErrorMessage(r));
     ttsDeleteSession(NULL);
     return;
   }
   r = ttsSetCallback(hReader, callback, (void*)0xdeadbeef, 0);
   if (r != ttsOK) {
-    msg(ttsGetErrorMessage(r));
+    modal_msg(ttsGetErrorMessage(r));
     ttsDeleteSession(NULL);
     return;
   }
@@ -111,11 +128,39 @@ void read_text(char* text)
   int r;
   r = ttsRead(hReader, text, ttsTRUE, ttsFALSE, NULL);
   if (r != ttsOK) {
-    msg(ttsGetErrorMessage(r));
+    modal_msg(ttsGetErrorMessage(r));
   }
 }
 
 void stop_speech(void)
 {
   ttsStop(hReader);
+}
+
+static char** langs = NULL;
+char** get_languages(void)
+{
+  if (!langs) {
+    int lcount = 0;
+    DIR* d = opendir("/mnt/sdcard/LoquendoTTS/data");
+    struct dirent* de;
+    if (!d) {
+      modal_msg("failed to open /mnt/sdcard/LoquendoTTS/data");
+      exit(1);
+    }
+    while ((de = readdir(d))) {
+      if (strlen(de->d_name) <= 4 || strcmp(de->d_name + strlen(de->d_name) - 4, ".vcf"))
+        continue;
+      de->d_name[strlen(de->d_name) - 4] = 0;
+      langs = realloc(langs, (lcount + 2) * sizeof(char*));
+      langs[lcount] = strdup(de->d_name);
+      printf("found language %s\n", langs[lcount]);
+      lcount++;
+    }
+    langs[lcount] = NULL;
+    if (conf.speech_lang > lcount - 1) conf.speech_lang = 0;
+    printf("%d languages found\n", lcount);
+    closedir(d);
+  }
+  return langs;
 }

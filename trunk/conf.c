@@ -9,6 +9,7 @@
 #include "conf.h"
 #include "font.h"
 #include "screen.h"
+#include "ui.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +30,7 @@ struct conf_s conf = {
   .starttextpos = NULL,
   .startpage = 0,
   .justify = 1,
+  .speech_lang = 0,
 };
 
 struct conf_s default_conf;
@@ -69,7 +71,7 @@ void read_file_conf(char* filename)
   FILE* fp = fopen(confname, "r");
   if (fp) {
     if (fread(&conf, 1, sizeof(conf), fp) != sizeof(conf))
-      msg("Error reading config file; continuing with default settings.");
+      modal_msg("Error reading config file; continuing with default settings.");
     normalize_conf(&conf);
     fclose(fp);
   }

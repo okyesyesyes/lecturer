@@ -23,3 +23,11 @@ void read_text(char* text)
 void stop_speech(void)
 {
 }
+
+int speech_lang = 0;
+
+const char** get_languages(void)
+{
+  static const char* l[] = {"Katrin", "Hanswurscht", NULL};
+  return l;
+}

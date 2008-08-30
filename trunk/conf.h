@@ -19,6 +19,8 @@ struct conf_s {
   unsigned char* starttextpos;
   int startpage;
   int justify;
+  int speech_lang;
+  int reserved[16];
 };
 
 extern struct conf_s conf;

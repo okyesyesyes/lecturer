@@ -11,3 +11,5 @@ void read_text(char* text);
 void stop_speech(void);
 
 extern int speech_timeout;
+
+char** get_languages(void);

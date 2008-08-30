@@ -13,7 +13,7 @@ extern FONT smallfont;
 
 void init_ui(void);
 char* file_dialog(char* dir);
-void config_dialog(void);
+int config_dialog(void);
 
 #define UI_TOP_LEFT 0
 #define UI_TOP_RIGHT 1
@@ -29,3 +29,9 @@ void config_dialog(void);
 #define UI_CENTER_AREA_RIGHT (screenx / 2 + 40)
 
 void draw_button(int position, char* label);
+
+#define REDO_PAGINATION (1 << 0)
+#define REDO_SPEECHINIT (1 << 1)
+
+void modal_msg(char* text);
+void splash_msg(char* text);

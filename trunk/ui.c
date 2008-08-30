@@ -16,6 +16,7 @@
 
 #include "screen.h"
 #include "input.h"
+#include "speech.h"
 
 FONT uifont;
 FONT diafont;
@@ -163,7 +164,17 @@ static void draw_checkbox(int x, int y, int ticked)
     box(x, y, CHECKBOX_SIZE, CHECKBOX_SIZE);
 }
 
-void config_dialog(void)
+static void draw_config_dialog()
+{
+  clear_screen();
+  draw_button(UI_BOTTOM_LEFT, "Rendering");
+  draw_button(UI_BOTTOM_RIGHT, "Speech");
+  draw_button(UI_TOP_RIGHT, "Back");
+}
+
+static int redo = 0;
+
+static int rendering_options_dialog(void)
 {
   char buf[256];
   int x,y;
@@ -199,7 +210,7 @@ void config_dialog(void)
 #define OPTIONS (INDENTLINE_BTN + BOXSPACING)
 
   for(;;) {
-    clear_screen();
+    draw_config_dialog();
     render_string(diafont, TITLE_X, TITLE, "Options");
     render_string(uifont, LEFT, MARGINS, "Margins");
 
@@ -276,7 +287,7 @@ void config_dialog(void)
     
     draw_button(UI_TOP_RIGHT, "Back");
     draw_button(UI_TOP_LEFT, "Save as default");
-    draw_button(UI_BOTTOM_LEFT, "Reset");
+    draw_button(UI_TOP_CENTER, "Reset");
 
     box(conf.marginx[0], conf.marginy[0], screenx - conf.marginx[0] - conf.marginx[1], screeny - conf.marginy[0] - conf.marginy[1]);
     while (!get_click(&x, &y, NULL)) {}
@@ -288,64 +299,86 @@ void config_dialog(void)
     }
     else if (y > MARGINS_BTN && y < MARGINS_BTN + BOX_SIZE) {
       /* left/right margin */
-      if (x > MARGINS_1_PLUS && x < MARGINS_1_PLUS + BOX_SIZE && conf.marginx[0] < screenx / 3)
-        conf.marginx[0]++;
-      else if (x > MARGINS_1_MINUS && x < MARGINS_1_MINUS + BOX_SIZE && conf.marginx[0] > 0)
-        conf.marginx[0]--;
-      else if (x > MARGINS_2_PLUS && x < MARGINS_2_PLUS + BOX_SIZE && conf.marginx[1] < screenx / 3)
-        conf.marginx[1]++;
-      else if (x > MARGINS_2_MINUS && x < MARGINS_2_MINUS + BOX_SIZE && conf.marginx[1] > 0)
-        conf.marginx[1]--;
+      if (x > MARGINS_1_PLUS && x < MARGINS_1_PLUS + BOX_SIZE && conf.marginx[0] < screenx / 3) {
+        conf.marginx[0]++; redo |= REDO_PAGINATION;
+      }
+      else if (x > MARGINS_1_MINUS && x < MARGINS_1_MINUS + BOX_SIZE && conf.marginx[0] > 0) {
+        conf.marginx[0]--; redo |= REDO_PAGINATION;
+      }
+      else if (x > MARGINS_2_PLUS && x < MARGINS_2_PLUS + BOX_SIZE && conf.marginx[1] < screenx / 3) {
+        conf.marginx[1]++; redo |= REDO_PAGINATION;
+      }
+      else if (x > MARGINS_2_MINUS && x < MARGINS_2_MINUS + BOX_SIZE && conf.marginx[1] > 0) {
+        conf.marginx[1]--; redo |= REDO_PAGINATION;
+      }
     }
     else if (y > MARGINSB_BTN && y < MARGINSB_BTN + BOX_SIZE) {
       /* top/bottom margin */
-      if (x > MARGINS_1_PLUS && x < MARGINS_1_PLUS + BOX_SIZE && conf.marginy[0] < screeny / 3)
-        conf.marginy[0]++;
-      else if (x > MARGINS_1_MINUS && x < MARGINS_1_MINUS + BOX_SIZE && conf.marginy[0] > 0)
-        conf.marginy[0]--;
-      else if (x > MARGINS_2_PLUS && x < MARGINS_2_PLUS + BOX_SIZE && conf.marginy[1] < screeny / 3)
-        conf.marginy[1]++;
-      else if (x > MARGINS_2_MINUS && x < MARGINS_2_MINUS + BOX_SIZE && conf.marginy[1] > 0)
-        conf.marginy[1]--;
+      if (x > MARGINS_1_PLUS && x < MARGINS_1_PLUS + BOX_SIZE && conf.marginy[0] < screeny / 3) {
+        conf.marginy[0]++; redo |= REDO_PAGINATION;
+      }
+      else if (x > MARGINS_1_MINUS && x < MARGINS_1_MINUS + BOX_SIZE && conf.marginy[0] > 0) {
+        conf.marginy[0]--; redo |= REDO_PAGINATION;
+      }
+      else if (x > MARGINS_2_PLUS && x < MARGINS_2_PLUS + BOX_SIZE && conf.marginy[1] < screeny / 3) {
+        conf.marginy[1]++; redo |= REDO_PAGINATION;
+      }
+      else if (x > MARGINS_2_MINUS && x < MARGINS_2_MINUS + BOX_SIZE && conf.marginy[1] > 0) {
+        conf.marginy[1]--; redo |= REDO_PAGINATION;
+      }
     }
     else if (y > SPACINGS_BTN && y < SPACINGS_BTN + BOX_SIZE) {
       /* spacings */
-      if (x > MARGINS_1_PLUS && x < MARGINS_1_PLUS + BOX_SIZE && conf.linespacing < 99)
-        conf.linespacing++;
-      else if (x > MARGINS_1_MINUS && x < MARGINS_1_MINUS + BOX_SIZE && conf.linespacing > -99)
-        conf.linespacing--;
-      else if (x > MARGINS_2_PLUS && x < MARGINS_2_PLUS + BOX_SIZE && conf.paraspacing < 99)
-        conf.paraspacing++;
-      else if (x > MARGINS_2_MINUS && x < MARGINS_2_MINUS + BOX_SIZE && conf.paraspacing > -99)
-        conf.paraspacing--;
+      if (x > MARGINS_1_PLUS && x < MARGINS_1_PLUS + BOX_SIZE && conf.linespacing < 99) {
+        conf.linespacing++; redo |= REDO_PAGINATION;
+      }
+      else if (x > MARGINS_1_MINUS && x < MARGINS_1_MINUS + BOX_SIZE && conf.linespacing > -99) {
+        conf.linespacing--; redo |= REDO_PAGINATION;
+      }
+      else if (x > MARGINS_2_PLUS && x < MARGINS_2_PLUS + BOX_SIZE && conf.paraspacing < 99) {
+        conf.paraspacing++; redo |= REDO_PAGINATION;
+      }
+      else if (x > MARGINS_2_MINUS && x < MARGINS_2_MINUS + BOX_SIZE && conf.paraspacing > -99) {
+        conf.paraspacing--; redo |= REDO_PAGINATION;
+      }
     }
     else if (y > INDENTLINE_BTN && y < INDENTLINE_BTN + BOX_SIZE) {
       /* indentation, empty line height, font size */
-      if (x > INDENTLINE_LEFT_PLUS && x < INDENTLINE_LEFT_PLUS + BOX_SIZE && conf.paraindentation < 200)
-        conf.paraindentation++;
-      else if (x > INDENTLINE_LEFT_MINUS && x < INDENTLINE_LEFT_MINUS + BOX_SIZE && conf.paraindentation > 0)
-        conf.paraindentation--;
-      else if (x > INDENTLINE_CENTER_PLUS && x < INDENTLINE_CENTER_PLUS + BOX_SIZE && conf.emptylineheight < 200)
-        conf.emptylineheight++;
-      else if (x > INDENTLINE_CENTER_MINUS && x < INDENTLINE_CENTER_MINUS + BOX_SIZE && conf.emptylineheight > 0)
-        conf.emptylineheight--;
-      else if (x > INDENTLINE_RIGHT_PLUS && x < INDENTLINE_RIGHT_PLUS + BOX_SIZE && conf.textfont < FONT_16)
-        conf.textfont++;
-      else if (x > INDENTLINE_RIGHT_MINUS && x < INDENTLINE_RIGHT_MINUS + BOX_SIZE && conf.textfont > FONT_10)
-        conf.textfont--;
+      if (x > INDENTLINE_LEFT_PLUS && x < INDENTLINE_LEFT_PLUS + BOX_SIZE && conf.paraindentation < 200) {
+        conf.paraindentation++; redo |= REDO_PAGINATION;
+      }
+      else if (x > INDENTLINE_LEFT_MINUS && x < INDENTLINE_LEFT_MINUS + BOX_SIZE && conf.paraindentation > 0) {
+        conf.paraindentation--; redo |= REDO_PAGINATION;
+      }
+      else if (x > INDENTLINE_CENTER_PLUS && x < INDENTLINE_CENTER_PLUS + BOX_SIZE && conf.emptylineheight < 200) {
+        conf.emptylineheight++; redo |= REDO_PAGINATION;
+      }
+      else if (x > INDENTLINE_CENTER_MINUS && x < INDENTLINE_CENTER_MINUS + BOX_SIZE && conf.emptylineheight > 0) {
+        conf.emptylineheight--; redo |= REDO_PAGINATION;
+      }
+      else if (x > INDENTLINE_RIGHT_PLUS && x < INDENTLINE_RIGHT_PLUS + BOX_SIZE && conf.textfont < FONT_16) {
+        conf.textfont++; redo |= REDO_PAGINATION;
+      }
+      else if (x > INDENTLINE_RIGHT_MINUS && x < INDENTLINE_RIGHT_MINUS + BOX_SIZE && conf.textfont > FONT_10) {
+        conf.textfont--; redo |= REDO_PAGINATION;
+      }
       printf("textfont %d\n",conf.textfont);
     }
     else if (y < UI_TOP_AREA && x > UI_RIGHT_AREA) {
       /* back */
-      break;
+      return -1;
     }
     else if (y < UI_TOP_AREA && x < UI_LEFT_AREA) {
       default_conf = conf;
       write_global_conf();
-      msg("Saved.");
+      modal_msg("Saved.");
     }
-    else if (y > UI_BOTTOM_AREA && x < UI_LEFT_AREA) {
+    else if (y < UI_TOP_AREA && x > UI_CENTER_AREA_LEFT && x < UI_CENTER_AREA_RIGHT) {
       conf = default_conf;
+      redo |= REDO_PAGINATION | REDO_SPEECHINIT;
+    }
+    else if (y > UI_BOTTOM_AREA) {
+      return x;
     }
   }
 }
@@ -359,4 +392,72 @@ void draw_button(int position, char* label)
   else if (position == UI_TOP_CENTER) x = (screenx - stringwidth(smallfont, label)) / 2;
   else x = screenx - stringwidth(smallfont, label);
   render_string_ex(smallfont, x, y, label,100);
+}
+
+static int speech_dialog(void)
+{
+  char** langs = get_languages();
+  for(;;) {
+    draw_config_dialog();
+    int x,y;
+    int dy = conf.marginy[0];
+    int boxy = -1;
+    char** ll = langs;
+    while (dy < screeny - conf.marginy[1] - fontheight(diafont) && *ll) {
+      render_string(diafont, conf.marginx[0], dy, *ll);
+      if (!strcmp(langs[conf.speech_lang], *ll)) boxy = dy;
+      ll++; dy += fontheight(diafont);
+    }
+    if (boxy != -1) {
+      box(conf.marginx[0], boxy, screenx - conf.marginx[0] - conf.marginx[1], fontheight(diafont));
+    }
+    while (!get_click(&x, &y, NULL)) {}
+    if (y > UI_BOTTOM_AREA) {
+      return x;
+    }
+    else if (y < UI_TOP_AREA && x > UI_RIGHT_AREA)
+      return -1;
+    else if (y < dy && y > conf.marginy[0] && x > conf.marginx[0] && x < screenx - conf.marginx[1]) {
+      int newlang = (y - conf.marginy[0]) / fontheight(diafont);
+      if (newlang != conf.speech_lang) {
+        conf.speech_lang = newlang;
+        redo |= REDO_SPEECHINIT;
+      }
+    }
+  }
+}
+
+int config_dialog()
+{
+#define DIALOG_RENDER 1
+#define DIALOG_SPEECH 2
+  int dialog = DIALOG_RENDER;
+  redo = 0;
+  for(;;) {
+    int x = -1;
+    switch(dialog) {
+      case DIALOG_RENDER: x = rendering_options_dialog(); break;
+      case DIALOG_SPEECH: x = speech_dialog(); break;
+      default: break;
+    }
+    if (x == -1) break;
+    else if (x < UI_LEFT_AREA) dialog = DIALOG_RENDER;
+    else if (x > UI_RIGHT_AREA) dialog = DIALOG_SPEECH;
+  }
+  return redo;
+}
+
+void modal_msg(char* text)
+{
+  int x, y;
+  clear_screen();
+  render_string(get_font(FONT_12), 0, 0, text);
+  draw_button(UI_BOTTOM_RIGHT, "Click to continue");
+  while (!get_click(&x, &y, NULL)) {}
+}
+
+void splash_msg(char* text)
+{
+  clear_screen();
+  render_string(diafont, screenx / 2 - stringwidth(diafont, text) / 2, screeny / 2, text);
 }

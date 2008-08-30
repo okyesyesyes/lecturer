@@ -19,4 +19,3 @@ void screen_init(void);
 void clear_screen(void);
 int screenlines(FONT font);
 
-void msg(char* text);
