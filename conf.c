@@ -33,6 +33,13 @@ struct conf_s conf = {
 
 struct conf_s default_conf;
 
+static void normalize_conf(struct conf_s* c)
+{
+  if (c->progressbar) c->progressbar = 1;
+  if (c->pagenumber) c->pagenumber = 1;
+  if (c->justify) c->justify = 1;
+}
+
 void read_global_conf(void)
 {
   FILE* fp = fopen("conf", "r");
@@ -40,6 +47,7 @@ void read_global_conf(void)
     struct conf_s newconf;
     if (fread(&newconf, 1, sizeof(conf), fp) == sizeof(conf)) {
       conf = newconf;
+      normalize_conf(&conf);
     }
     filename = malloc(256);
     if (!fgets(filename, 256, fp)) {
@@ -62,6 +70,7 @@ void read_file_conf(char* filename)
   if (fp) {
     if (fread(&conf, 1, sizeof(conf), fp) != sizeof(conf))
       msg("Error reading config file; continuing with default settings.");
+    normalize_conf(&conf);
     fclose(fp);
   }
   free(confname);

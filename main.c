@@ -181,7 +181,7 @@ repaginate:
         if (spacecount > 0) {
           spacewidth = (screenx - lastspacewidth - fbx - conf.marginx[1])	/* remaining space on this line in pixels */
                        + glyphwidth(textfont, ' ') * spacecount;		/* whitespace already accounted for */
-          if (!dontjustify) printf("spacewidth %d num %d\n", spacewidth, spacecount);
+          //if (!dontjustify) printf("spacewidth %d num %d\n", spacewidth, spacecount);
         }
         else dontjustify = 1;
         //printf("linewidth %d\n",linewidth);
@@ -192,7 +192,7 @@ repaginate:
             fbx += spacesize;
             spacewidth -= spacesize;
             spacecount--;
-            printf("%d px space remaining for %d spaces\n", spacewidth, spacecount);
+            //printf("%d px space remaining for %d spaces\n", spacewidth, spacecount);
           }
           else fbx += render_char(textfont, fbx, fby, *linepos);
         }
