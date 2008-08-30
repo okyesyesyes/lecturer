@@ -53,7 +53,7 @@ static int TsScreen_pen(int *x,int *y,int *pen) {
   return 1;
 }
 
-int TsScreen_waitevent(int timeout) {
+static int TsScreen_waitevent(int timeout) {
   fd_set active_fd_set,read_fd_set;;
   int retval;
   struct timeval tv;
@@ -87,6 +87,7 @@ int TsScreen_waitevent(int timeout) {
   }
   return(0);
 }
+
 void input_init(void)
 {
         tsfd = open("/dev/ts", O_RDWR|O_NOCTTY|O_NONBLOCK);
