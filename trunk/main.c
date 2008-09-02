@@ -287,7 +287,7 @@ repaginate:
               do_speech = 1;
             }
           }
-          else if (tsx > probar_left_margin && tsx < probar_right_margin && tsy > UI_BOTTOM_AREA) {
+          else if (conf.progressbar && tsx > probar_left_margin && tsx < probar_right_margin && tsy > screeny - 20) {
             currentpage = (tsx - probar_left_margin) * pages / probarw;
             //printf("tsx %d pages %d probarw %d currentpage %d\n", tsx, pages, probarw,currentpage);
           }
