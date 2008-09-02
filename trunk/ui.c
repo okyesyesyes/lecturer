@@ -8,6 +8,7 @@
 
 #include "conf.h"
 #include "ui.h"
+#include "version.h"
 
 #include <dirent.h>
 #include <string.h>
@@ -168,6 +169,7 @@ static void draw_config_dialog()
 {
   clear_screen();
   draw_button(UI_BOTTOM_LEFT, "Rendering");
+  draw_button(UI_BOTTOM_CENTER, "About");
   draw_button(UI_BOTTOM_RIGHT, "Speech");
   draw_button(UI_TOP_RIGHT, "Back");
 }
@@ -388,9 +390,10 @@ void draw_button(int position, char* label)
   int x, y;
   if (position == UI_TOP_LEFT || position == UI_TOP_RIGHT || position == UI_TOP_CENTER) y = 0;
   else y = screeny - fontheight(smallfont);
-  if (position == UI_TOP_LEFT || position == UI_BOTTOM_LEFT) x = 0;
-  else if (position == UI_TOP_CENTER) x = (screenx - stringwidth(smallfont, label)) / 2;
-  else x = screenx - stringwidth(smallfont, label);
+  if (position == UI_TOP_LEFT || position == UI_BOTTOM_LEFT) x = conf.marginx[0];
+  else if (position == UI_TOP_CENTER || position == UI_BOTTOM_CENTER) 
+    x = conf.marginx[0] + (screenx - conf.marginx[0] - conf.marginx[1] - stringwidth(smallfont, label)) / 2;
+  else x = screenx - conf.marginx[1] - stringwidth(smallfont, label);
   render_string_ex(smallfont, x, y, label,100);
 }
 
@@ -427,10 +430,32 @@ static int speech_dialog(void)
   }
 }
 
+static int about_dialog()
+{
+  int x,y;
+  for(;;) {
+    draw_config_dialog();
+#define ABOUT_TITLE 30
+    render_string(diafont, LEFT, ABOUT_TITLE, "Lecturer");
+    render_string(uifont, LEFT, ABOUT_TITLE+50, "\xa9 2008 Ulrich Hecht");
+    render_string(uifont, LEFT, ABOUT_TITLE+80, "Licensed under the terms of the");
+    render_string(uifont, LEFT, ABOUT_TITLE+100, "GNU Public License version 2.");
+    render_string(uifont, LEFT, ABOUT_TITLE+130, "http://lecturer.googlecode.com/");
+    render_string(uifont, LEFT, ABOUT_TITLE+160, VERSION);
+    while (!get_click(&x, &y, NULL)) {}
+    if (y > UI_BOTTOM_AREA) {
+      return x;
+    }
+    else if (y < UI_TOP_AREA && x > UI_RIGHT_AREA)
+      return -1;
+  }
+}
+
 int config_dialog()
 {
 #define DIALOG_RENDER 1
 #define DIALOG_SPEECH 2
+#define DIALOG_ABOUT 3
   int dialog = DIALOG_RENDER;
   redo = 0;
   for(;;) {
@@ -438,11 +463,13 @@ int config_dialog()
     switch(dialog) {
       case DIALOG_RENDER: x = rendering_options_dialog(); break;
       case DIALOG_SPEECH: x = speech_dialog(); break;
+      case DIALOG_ABOUT: x = about_dialog(); break;
       default: break;
     }
     if (x == -1) break;
     else if (x < UI_LEFT_AREA) dialog = DIALOG_RENDER;
     else if (x > UI_RIGHT_AREA) dialog = DIALOG_SPEECH;
+    else if (x > UI_CENTER_AREA_LEFT && x < UI_CENTER_AREA_RIGHT) dialog = DIALOG_ABOUT;
   }
   return redo;
 }
