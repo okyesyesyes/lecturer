@@ -23,11 +23,13 @@
 #include "conf.h"
 #include "ui.h"
 #include "speech.h"
+#include "encoding.h"
 
 #define TEXT_DIR "text"
 
 FONT textfont;
 
+unsigned char* rawtext;
 unsigned char* text;
 
 int main(int argc, char** argv)
@@ -46,6 +48,7 @@ int main(int argc, char** argv)
   int do_speech = 0;
   int speech_on = 0;
   int r;
+  int free_text = 0; /* set if memory pointed to by text has to be free()d */
   
   fd = fd2 = 0;
   
@@ -84,10 +87,16 @@ reload:
       perror("opening text");
       exit(1);
     }
-    text = mmap(0, textlen, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd2, 0);
-    if (!text) {
+    rawtext = mmap(0, textlen, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd2, 0);
+    if (!rawtext) {
       perror("mmapping text");
       exit(1);
+    }
+    text = utf8_to_latin1(rawtext, &textlen);
+    if (text) free_text = 1;
+    else {	/* could not convert from UTF-8, assuming ISO 8859-1 */
+      free_text = 0;
+      text = rawtext;
     }
   }
 
@@ -103,8 +112,10 @@ reload:
 
 #define PROGRESS_LINE (screeny - 5)
 #define PROGRESS_WIDTH 3
-  int probarw = screenx - conf.marginx[0] - conf.marginx[1] - getglyph(smallfont, '0')->x * 4;
-  int probarp = PROGRESS_LINE * pitch + conf.marginx[0];
+  int probar_left_margin = conf.marginx[0] + stringwidth(smallfont, "Talk ");
+  int probar_right_margin = screenx - conf.marginx[1] - getglyph(smallfont, '0')->x * 4;
+  int probarw = probar_right_margin - probar_left_margin;
+  int probarp = PROGRESS_LINE * pitch + probar_left_margin * bpp;
 
   int pages;
 repaginate:  
@@ -136,6 +147,7 @@ repaginate:
         draw_button(UI_TOP_LEFT,"Quit");
         draw_button(UI_TOP_RIGHT, "File");
         draw_button(UI_TOP_CENTER, "Options");
+        draw_button(UI_BOTTOM_LEFT, "Talk");
         textpos = page[currentpage];
       }
       else {
@@ -254,8 +266,9 @@ repaginate:
             filename = file_dialog(TEXT_DIR);
             if (filename) {
               write_file_conf(oldname, textpos, currentpage);
-              munmap(text, textlen);
-              text = NULL;
+              if (free_text) free(text);
+              munmap(rawtext, textlen);
+              text = rawtext = NULL;
               if (page) free(page);
               conf.starttextpos = 0; conf.startpage = 0;
               free(oldname);
@@ -263,7 +276,7 @@ repaginate:
             }
             else filename = oldname;
           }
-          else if (tsx > UI_CENTER_AREA_LEFT && tsx < UI_CENTER_AREA_RIGHT && tsy > UI_BOTTOM_AREA) {
+          else if (tsx < probar_left_margin && tsy > UI_BOTTOM_AREA) {
             if (speech_on) {
               speech_on = 0;
               do_speech = 0;
@@ -274,8 +287,12 @@ repaginate:
               do_speech = 1;
             }
           }
-          else if (tsy < 135 && currentpage > 0) currentpage--;
-          else if (tsy > 135 && currentpage < pages - 1) currentpage++;
+          else if (tsx > probar_left_margin && tsx < probar_right_margin && tsy > UI_BOTTOM_AREA) {
+            currentpage = (tsx - probar_left_margin) * pages / probarw;
+            //printf("tsx %d pages %d probarw %d currentpage %d\n", tsx, pages, probarw,currentpage);
+          }
+          else if (tsx < (screenx / 2) && currentpage > 0) currentpage--;
+          else if (tsx > (screenx / 2) && currentpage < pages - 1) currentpage++;
         }
         else {
           /* speech timeout */

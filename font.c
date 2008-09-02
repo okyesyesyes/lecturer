@@ -73,7 +73,7 @@ int render_char(unsigned char* font, int x, int y, int c)
 int render_string_ex(unsigned char* font, int x, int y, char* str, int contrast)
 {
   for(; *str; str++) {
-    x += render_char_ex(font, x, y, *str, contrast);
+    x += render_char_ex(font, x, y, (unsigned char)*str, contrast);
   }
   return x;
 }

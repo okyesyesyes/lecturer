@@ -20,6 +20,7 @@ int config_dialog(void);
 #define UI_BOTTOM_LEFT 2
 #define UI_BOTTOM_RIGHT 3
 #define UI_TOP_CENTER 4
+#define UI_BOTTOM_CENTER 5
 
 #define UI_TOP_AREA 40
 #define UI_RIGHT_AREA (screenx - 80)
