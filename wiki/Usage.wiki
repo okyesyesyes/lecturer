@@ -2,7 +2,7 @@
 
 =Software Installation for TomTom Go x30=
 
-To install, download a binary `.zip` file and uncompress it to the internal storage of your device. Make sure that you have at least one "computer voice" installed. (The folder `LoquendoTTS` must be present.)
+To install, download a binary `.zip` file and uncompress it to the internal storage of your device. *Make sure that you have at least one "computer voice" installed.* (The folder `LoquendoTTS` must be present.)
 
 After you disconnect your device, an icon with the caption "Lecturer" should appear on the menu.
 
