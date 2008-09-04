@@ -58,7 +58,7 @@ restart:
     memset(entries, 0, sizeof(entries));
     while (dirp < screenlines(diafont) && (de = readdir(d))) {
       if ( (strlen(de->d_name) > 5 && !strcmp(de->d_name + strlen(de->d_name) - 5, ".conf")) || /* hide .conf files */
-           de->d_name[0] == '.' ) /* hide hidden entries */
+           (de->d_name[0] == '.' && !(de->d_name[1] == '.' && de->d_name[2] == 0))) /* hide hidden entries */
         continue;
       entries[dirp] = *de;
       dirp++;
